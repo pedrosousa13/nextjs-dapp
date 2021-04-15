@@ -31,7 +31,7 @@ export default function Home() {
     await requestAccount()
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     const signer = provider.getSigner()
-    const contract = new ethers.Contract(greeterAddress, Token.abi, signer)
+    const contract = new ethers.Contract(tokenAddress, Token.abi, signer)
     const transaction = await contract.transfer(userAccount, amount)
     await transaction.wait()
     console.log(`${amount} Coins successfully sent to ${userAccount}`)
@@ -78,6 +78,23 @@ export default function Home() {
           onChange={e => setGreetingValue(e.target.value)}
           placeholder='Set Greeting'
           value={greeting}
+        />
+
+        <br/>
+
+        <button onClick={() => getBalance()}>Get Balance</button>
+        <button onClick={() => sendCoins()}>Send Coins</button>
+        <input
+          type="text"
+          onChange={e => setUserAccount(e.target.value)}
+          placeholder='Account ID'
+          value={userAccount}
+        />
+        <input
+          type="text"
+          onChange={e => setAmount(e.target.value)}
+          placeholder='Amount'
+          value={amount}
         />
       </main>
     </div>
