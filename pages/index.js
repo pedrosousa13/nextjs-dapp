@@ -1,7 +1,68 @@
+import {useState} from 'react'
+import {ethers} from 'ethers'
 import Head from 'next/head'
 import styles from '../styles/Home.module.css'
+import Greeter from '../artifacts/contracts/Greeter.sol/Greeter.json'
+import Token from '../artifacts/contracts/Token.sol/Token.json'
+
+const greeterAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'
+const tokenAddress = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9'
 
 export default function Home() {
+  const [greeting, setGreetingValue] = useState('')
+  const [userAccount, setUserAccount] = useState('')
+  const [amount, setAmount] = useState(0)
+
+  const requestAccount = async () => {
+    await window.ethereum.request({ method: 'eth_requestAccounts' })
+  }
+
+  const getBalance = async () => {
+    if (typeof window.ethereum === 'undefined') return
+    const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    const contract = new ethers.Contract(tokenAddress, Token.abi, provider)
+    const balance = await contract.balanceOf(account)
+    console.log('Balance: ', balance.toString())
+  }
+
+  const sendCoins = async () => {
+    if (typeof window.ethereum === 'undefined') return
+    await requestAccount()
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    const signer = provider.getSigner()
+    const contract = new ethers.Contract(greeterAddress, Token.abi, signer)
+    const transaction = await contract.transfer(userAccount, amount)
+    await transaction.wait()
+    console.log(`${amount} Coins successfully sent to ${userAccount}`)
+  }
+
+  const fetchGreeting = async () => {
+    if (typeof window.ethereum === 'undefined') return
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    const contract = new ethers.Contract(greeterAddress, Greeter.abi, provider)
+
+    try {
+      const data = await contract.greet()
+      console.log({ data })
+    } catch (err) {
+      console.log({err})
+    }
+
+  }
+
+  const setGreeting = async () => {
+    if (!greeting || typeof window.ethereum === 'undefined') return
+    await requestAccount()
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    const signer = provider.getSigner()
+    const contract = new ethers.Contract(greeterAddress, Greeter.abi, signer)
+    const transaction = await contract.setGreeting(greeting)
+    setGreetingValue('')
+    await transaction.wait()
+    await fetchGreeting()
+  }
+
   return (
     <div className={styles.container}>
       <Head>
@@ -10,56 +71,15 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <button onClick={() => fetchGreeting()}>Fetch Greeting</button>
+        <button onClick={() => setGreeting()}>Set Greeting</button>
+        <input
+          type="text"
+          onChange={e => setGreetingValue(e.target.value)}
+          placeholder='Set Greeting'
+          value={greeting}
+        />
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
   )
 }
